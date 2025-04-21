@@ -3,13 +3,13 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  BeforeInsert,
-  BeforeUpdate,
-  Index,
-  Unique,
   PrimaryGeneratedColumn,
+  Index,
+  OneToOne,
+  JoinColumn,
 } from 'typeorm';
-import { Exclude } from 'class-transformer';
+import { Exclude, Expose } from 'class-transformer';
+import { Profile } from 'src/profiles/entities/profile.entity';
 
 export enum UserRole {
   USER = 'user',
@@ -17,7 +17,8 @@ export enum UserRole {
 }
 
 @Entity('users')
-@Unique(['email', 'username'])
+@Expose()
+@Index(['username', 'email'], { unique: true })
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -28,11 +29,8 @@ export class User {
   @Column({ type: 'varchar', length: 255, nullable: false })
   email: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: false })
-  firstName: string;
-
-  @Column({ type: 'varchar', length: 255, nullable: false })
-  lastName: string;
+  @Column({ type: 'enum', enum: UserRole, default: UserRole.USER })
+  role: UserRole;
 
   @Exclude()
   @Column({ type: 'varchar', length: 255, nullable: false })
@@ -44,4 +42,8 @@ export class User {
   @Exclude()
   @UpdateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
+
+  @OneToOne(() => Profile, (profile) => profile.user, { cascade: true, eager: true })
+  @Expose()
+  profile: Profile;
 }

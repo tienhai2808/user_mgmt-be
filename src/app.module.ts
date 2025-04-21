@@ -7,6 +7,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { typeOrmConfig } from './config/typeorm.config';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { envValidationSchema } from './config/env.validation';
+import { ProfilesModule } from './profiles/profiles.module';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
@@ -20,8 +22,11 @@ import { envValidationSchema } from './config/env.validation';
       useFactory: (configService: ConfigService) =>
         typeOrmConfig(configService),
     }),
+    RedisModule,
     UsersModule,
     AuthModule,
+    ProfilesModule,
+    RedisModule,
   ],
   controllers: [AppController],
   providers: [AppService],

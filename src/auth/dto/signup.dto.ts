@@ -1,4 +1,7 @@
-import { IsEmail, IsString, MinLength, IsNotEmpty } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsNotEmpty, IsIn, IsDate } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export const GENDER = ['male', 'female', 'other'] as const;
 
 export class SignupDto {
   @IsString()
@@ -6,7 +9,7 @@ export class SignupDto {
   @MinLength(3)
   username: string;
 
-  @IsEmail()
+  @IsEmail({}, { message: 'Không đúng định dạng email'})
   @IsNotEmpty()
   email: string;
 
@@ -17,6 +20,16 @@ export class SignupDto {
   @IsString()
   @IsNotEmpty()
   lastName: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsIn(GENDER)
+  gender: string;
+
+  @IsDate()
+  @Type(() => Date)
+  @IsNotEmpty()
+  dob: Date;
 
   @IsString()
   @IsNotEmpty()
