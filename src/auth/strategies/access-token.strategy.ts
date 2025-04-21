@@ -6,24 +6,32 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Request } from 'express';
+import { UserRole } from '../../users/entities/user.entity';
 
 @Injectable()
-export class AccessTokenStrategy extends PassportStrategy(Strategy, 'access-token') {
+export class AccessTokenStrategy extends PassportStrategy(
+  Strategy,
+  'access-token',
+) {
   constructor(
     private configService: ConfigService,
     @InjectRepository(User) private userRepository: Repository<User>,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
-        (req: Request) => req?.cookies?.accessToken,
+        (req: Request) => {
+          return req?.cookies?.accessToken;
+        },
       ]),
       ignoreExpiration: false,
       secretOrKey: configService.get<string>('JWT_ACCESS_SECRET'),
     });
   }
 
-  async validate(payload: { sub: string, role: string }) {
-    const user = await this.userRepository.findOne({ where: { id: payload.sub } });
+  async validate(payload: { sub: string; role: string }) {
+    const user = await this.userRepository.findOne({
+      where: { id: payload.sub, role: payload.role as UserRole },
+    });
     if (!user) {
       return null;
     }

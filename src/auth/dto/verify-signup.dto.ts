@@ -8,6 +8,6 @@ export class VerifySignupDto {
 
   @Type(() => String)
   @IsNotEmpty()
-  @Length(4, 4)
+  @Length(6, 6)
   otp: string;
 }

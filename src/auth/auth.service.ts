@@ -13,8 +13,8 @@ import { generateOtp } from './utils/otp.util';
 import { v4 as uuidv4 } from 'uuid';
 import { VerifySignupDto } from './dto/verify-signup.dto';
 import { TokensService } from './tokens.service';
-import { Response } from 'express';
-import { setTokensCookie } from './utils/jwt.util';
+import { Request, Response } from 'express';
+import { setAccessTokenCookie, setRefreshTokenCookie } from './utils/jwt.util';
 
 @Injectable()
 export class AuthService {
@@ -36,7 +36,7 @@ export class AuthService {
       throw new HttpException('Người dùng đã tồn tại', HttpStatus.BAD_REQUEST);
     }
 
-    const otp = generateOtp();
+    const otp = generateOtp(6);
     const registrationToken = uuidv4();
 
     const hasedPassword = await hashPassword(password);
@@ -128,7 +128,8 @@ export class AuthService {
       savedUser.id,
       savedUser.role,
     );
-    setTokensCookie(res, accessToken, refreshToken);
+    setAccessTokenCookie(res, accessToken);
+    setRefreshTokenCookie(res, refreshToken);
 
     return { user: savedUser };
   }
@@ -153,25 +154,20 @@ export class AuthService {
 
     const accessToken = this.tokensService.generateAccessToken(
       user.id,
-      user.email,
+      user.role,
     );
     const refreshToken = await this.tokensService.generateRefreshToken(
       user.id,
-      user.email,
+      user.role,
     );
-    setTokensCookie(res, accessToken, refreshToken);
+    setAccessTokenCookie(res, accessToken);
+    setRefreshTokenCookie(res, refreshToken);
 
     return { user };
   }
 
-  async getMe(userId: string): Promise<User> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-      relations: ['profile'],
-    });
-    if (!user) {
-      throw new HttpException('Người dùng không tồn tại', HttpStatus.NOT_FOUND);
-    }
-    return user;
+  async refreshToken(userId: string, role: string, res: Response): Promise<void> {
+    const accessToken = this.tokensService.generateAccessToken(userId, role);
+    setAccessTokenCookie(res, accessToken);
   }
 }
