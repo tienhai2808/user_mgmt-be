@@ -15,6 +15,8 @@ import { VerifySignupDto } from './dto/verify-signup.dto';
 import { TokensService } from './tokens.service';
 import { Request, Response } from 'express';
 import { setAccessTokenCookie, setRefreshTokenCookie } from './utils/jwt.util';
+import { UpdatePasswordDto } from './dto/update-pw.dto';
+import { UpdateInfoDto } from './dto/update-info';
 
 @Injectable()
 export class AuthService {
@@ -124,7 +126,7 @@ export class AuthService {
       savedUser.id,
       savedUser.role,
     );
-    const refreshToken = await this.tokensService.generateRefreshToken(
+    const refreshToken = this.tokensService.generateRefreshToken(
       savedUser.id,
       savedUser.role,
     );
@@ -156,7 +158,7 @@ export class AuthService {
       user.id,
       user.role,
     );
-    const refreshToken = await this.tokensService.generateRefreshToken(
+    const refreshToken = this.tokensService.generateRefreshToken(
       user.id,
       user.role,
     );
@@ -169,5 +171,48 @@ export class AuthService {
   async refreshToken(userId: string, role: string, res: Response): Promise<void> {
     const accessToken = this.tokensService.generateAccessToken(userId, role);
     setAccessTokenCookie(res, accessToken);
+  }
+
+  async signout(res: Response): Promise<void> {
+    res.clearCookie('accessToken', { httpOnly: true, secure: true });
+    res.clearCookie('refreshToken', { httpOnly: true, secure: true });
+  }
+
+  async updatePassword(userId: string, updatePasswordDto: UpdatePasswordDto): Promise<{ user: User }> {
+    const { oldPassword, newPassword } = updatePasswordDto;
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new HttpException('Người dùng không tồn tại', HttpStatus.BAD_REQUEST);
+    }
+
+    const isCorrectPassword = await comparePassword(oldPassword, user.password);
+    if (!isCorrectPassword) {
+      throw new HttpException('Mật khẩu cũ không chính xác', HttpStatus.BAD_REQUEST);
+    }
+    const hashedNewPassword = await hashPassword(newPassword);
+    user.password = hashedNewPassword;
+
+    const updatedUser = await this.userRepository.save(user);
+    
+    return { user: updatedUser };
+  }
+
+  async updateInfo(userId: string, updateInfoDto: UpdateInfoDto): Promise<{ user: User }> {
+    const { username } = updateInfoDto;
+    const user = await this.userRepository.findOne({ where: { id: userId } })
+    if (!user) {
+      throw new HttpException('Người dùng không tồn tại', HttpStatus.BAD_REQUEST);
+    }
+
+    const existingUser = await this.userRepository.findOne({ where: { username } });
+    if (existingUser && existingUser.id !== userId) {
+      throw new HttpException('Tên người dùng đã tồn tại', HttpStatus.BAD_REQUEST);
+    }
+
+    user.username = username;
+
+    const updatedUser = await this.userRepository.save(user);
+    
+    return { user: updatedUser };
   }
 }

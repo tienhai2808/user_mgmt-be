@@ -10,8 +10,6 @@ import {
   UseGuards,
   Request,
   Res,
-  UseInterceptors,
-  ClassSerializerInterceptor,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
@@ -20,6 +18,8 @@ import { VerifySignupDto } from './dto/verify-signup.dto';
 import { AccessTokenGuard } from './guards/access-token.guard';
 import { Response } from 'express';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
+import { UpdatePasswordDto } from './dto/update-pw.dto';
+import { UpdateInfoDto } from './dto/update-info';
 
 @Controller('auth')
 export class AuthController {
@@ -100,6 +100,58 @@ export class AuthController {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
       
+    }
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Post('signout') 
+  async signout(@Res({ passthrough: true }) res: Response) {
+    try {
+      await this.authService.signout(res);
+      return { message: 'Đăng xuất thành công' };
+    } catch (er) {
+      console.log(`Lỗi ở đăng xuất: ${er}`);
+      if (er instanceof HttpException) {
+        throw er;
+      }
+      throw new HttpException(
+        'Lỗi máy chủ nội bộ',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+  
+  @UseGuards(AccessTokenGuard)
+  @Patch('update-password')
+  async updatePassword(@Request() req, @Body() updatePasswordDto: UpdatePasswordDto) {
+    try {
+      return await this.authService.updatePassword(req.user.id, updatePasswordDto);
+    } catch (err) {
+      console.log(`Lỗi ở cập nhật mật khẩu: ${err}`);
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      throw new HttpException(
+        'Lỗi máy chủ nội bộ',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Patch('update-info')
+  async updateInfo(@Request() req, @Body() updateInfoDto: UpdateInfoDto) {
+    try {
+      return await this.authService.updateInfo(req.user.id, updateInfoDto);
+    } catch (err) {
+      console.log(`Lỗi ở cập nhật thông tin: ${err}`);
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      throw new HttpException(
+        'Lỗi máy chủ nội bộ',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }
