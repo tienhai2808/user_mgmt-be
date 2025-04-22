@@ -9,6 +9,7 @@ import {
   HttpStatus,
   UseGuards,
   Res,
+  Delete,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
@@ -24,6 +25,7 @@ import { VerifyForgotPasswordDto } from './dto/verify-forgot-pw.dto';
 import { ResetPasswordDto } from './dto/reset-pw.dto';
 import { GetUser } from './decorators/get-user.decorator';
 import { User } from 'src/users/entities/user.entity';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('auth')
 export class AuthController {
@@ -228,6 +230,27 @@ export class AuthController {
       return await this.authService.resetPassword(resetPasswordDto, res);
     } catch (err) {
       console.log(`Lỗi ở đổi mới mật khẩu: ${err}`);
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      throw new HttpException(
+        'Lỗi máy chủ nội bộ',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        { cause: err },
+      );
+    }
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Delete('delete-account')
+  async deleteAccount(
+    @GetUser('id') userId: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    try {
+      return await this.authService.deleteAccount(userId, res);
+    } catch (err) {
+      console.log(`Lỗi xóa tải khoản: ${err}`);
       if (err instanceof HttpException) {
         throw err;
       }

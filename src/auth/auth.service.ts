@@ -190,8 +190,8 @@ export class AuthService {
   }
 
   async signout(res: Response): Promise<{ message: string }> {
-    res.clearCookie('accessToken', { httpOnly: true, secure: true });
-    res.clearCookie('refreshToken', { httpOnly: true, secure: true });
+    res.clearCookie('accessToken', { httpOnly: true, secure: true, sameSite: 'strict' });
+    res.clearCookie('refreshToken', { httpOnly: true, secure: true, sameSite: 'strict' });
     return { message: 'Đăng xuất thành công' };
   }
 
@@ -358,5 +358,19 @@ export class AuthService {
     setRefreshTokenCookie(res, refreshToken);
 
     return { user: updatedUser }
+  }
+
+  async deleteAccount(userId: string, res: Response): Promise<{ message: string }> {
+    const user = await this.userRepository.findOne({ where: { id: userId } })
+    if (!user) {
+      throw new HttpException('Không có quyền xóa tài khoản', HttpStatus.UNAUTHORIZED)
+    }
+
+    await this.userRepository.remove(user)
+
+    res.clearCookie('accessToken', { httpOnly: true, secure: true, sameSite: 'strict' });
+    res.clearCookie('refreshToken', { httpOnly: true, secure: true, sameSite: 'strict' });
+    
+    return { message: 'Xóa tài khoản thành công' }
   }
 }
