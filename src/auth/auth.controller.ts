@@ -8,7 +8,6 @@ import {
   HttpException,
   HttpStatus,
   UseGuards,
-  Request,
   Res,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -16,13 +15,15 @@ import { SignupDto } from './dto/signup.dto';
 import { SigninDto } from './dto/signin.dto';
 import { VerifySignupDto } from './dto/verify-signup.dto';
 import { AccessTokenGuard } from './guards/access-token.guard';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { UpdatePasswordDto } from './dto/update-pw.dto';
 import { UpdateInfoDto } from './dto/update-info';
 import { ForgotPasswordDto } from './dto/forgot-pw.dto';
 import { VerifyForgotPasswordDto } from './dto/verify-forgot-pw.dto';
 import { ResetPasswordDto } from './dto/reset-pw.dto';
+import { GetUser } from './decorators/get-user.decorator';
+import { User } from 'src/users/entities/user.entity';
 
 @Controller('auth')
 export class AuthController {
@@ -40,12 +41,16 @@ export class AuthController {
       throw new HttpException(
         'Lỗi máy chủ nội bộ',
         HttpStatus.INTERNAL_SERVER_ERROR,
+        { cause: err },
       );
     }
   }
 
   @Post('signup/verify-email')
-  async verifySignup(@Body() verifySignupDto: VerifySignupDto, @Res({ passthrough: true }) res: Response) {
+  async verifySignup(
+    @Body() verifySignupDto: VerifySignupDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     try {
       const result = await this.authService.verifySignup(verifySignupDto, res);
       return result;
@@ -57,12 +62,16 @@ export class AuthController {
       throw new HttpException(
         'Lỗi máy chủ nội bộ',
         HttpStatus.INTERNAL_SERVER_ERROR,
+        { cause: err },
       );
     }
   }
 
   @Post('signin')
-  async signin(@Body() signinDto: SigninDto, @Res({ passthrough: true }) res: Response) {
+  async signin(
+    @Body() signinDto: SigninDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     try {
       const result = await this.authService.signin(signinDto, res);
       return result;
@@ -74,59 +83,70 @@ export class AuthController {
       throw new HttpException(
         'Lỗi máy chủ nội bộ',
         HttpStatus.INTERNAL_SERVER_ERROR,
+        { cause: err },
       );
     }
   }
 
   @UseGuards(AccessTokenGuard)
   @Get('me')
-  async getMe(@Request() req) {
-    if (!req.user) {
-      throw new HttpException('Người dùng không hợp lệ', HttpStatus.UNAUTHORIZED);
+  async getMe(@GetUser() user: User) {
+    if (!user) {
+      throw new HttpException(
+        'Người dùng không hợp lệ',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
-    return req.user;
+    return user;
   }
 
   @UseGuards(RefreshTokenGuard)
   @Get('refresh-token')
-  async refreshToken(@Request() req, @Res({ passthrough: true }) res: Response) {
+  async refreshToken(
+    @GetUser() user: User,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     try {
-      return await this.authService.refreshToken(req.user.id, req.user.role, res);
+      return await this.authService.refreshToken(user.id, user.role, res);
     } catch (err) {
       console.log(`Lỗi ở làm mới mã thông báo: ${err}`);
       if (err instanceof HttpException) {
         throw err;
       }
       throw new HttpException(
-        'Lỗi máy chủ nội bộ', 
+        'Lỗi máy chủ nội bộ',
         HttpStatus.INTERNAL_SERVER_ERROR,
+        { cause: err },
       );
-      
     }
   }
 
   @UseGuards(AccessTokenGuard)
-  @Post('signout') 
+  @Post('signout')
   async signout(@Res({ passthrough: true }) res: Response) {
     try {
       return await this.authService.signout(res);
-    } catch (er) {
-      console.log(`Lỗi ở đăng xuất: ${er}`);
-      if (er instanceof HttpException) {
-        throw er;
+    } catch (err) {
+      console.log(`Lỗi ở đăng xuất: ${err}`);
+      if (err instanceof HttpException) {
+        throw err;
       }
       throw new HttpException(
         'Lỗi máy chủ nội bộ',
         HttpStatus.INTERNAL_SERVER_ERROR,
+        { cause: err },
       );
     }
   }
-  
+
   @UseGuards(AccessTokenGuard)
   @Patch('update-password')
-  async updatePassword(@Request() req, @Body() updatePasswordDto: UpdatePasswordDto) {
+  async updatePassword(
+    @GetUser('id') userId: string,
+    @Body() updatePasswordDto: UpdatePasswordDto,
+  ) {
     try {
-      return await this.authService.updatePassword(req.user.id, updatePasswordDto);
+      return await this.authService.updatePassword(userId, updatePasswordDto);
     } catch (err) {
       console.log(`Lỗi ở cập nhật mật khẩu: ${err}`);
       if (err instanceof HttpException) {
@@ -135,15 +155,19 @@ export class AuthController {
       throw new HttpException(
         'Lỗi máy chủ nội bộ',
         HttpStatus.INTERNAL_SERVER_ERROR,
+        { cause: err },
       );
     }
   }
 
   @UseGuards(AccessTokenGuard)
   @Patch('update-info')
-  async updateInfo(@Request() req, @Body() updateInfoDto: UpdateInfoDto) {
+  async updateInfo(
+    @GetUser('id') userId: string,
+    @Body() updateInfoDto: UpdateInfoDto,
+  ) {
     try {
-      return await this.authService.updateInfo(req.user.id, updateInfoDto);
+      return await this.authService.updateInfo(userId, updateInfoDto);
     } catch (err) {
       console.log(`Lỗi ở cập nhật thông tin: ${err}`);
       if (err instanceof HttpException) {
@@ -152,6 +176,7 @@ export class AuthController {
       throw new HttpException(
         'Lỗi máy chủ nội bộ',
         HttpStatus.INTERNAL_SERVER_ERROR,
+        { cause: err },
       );
     }
   }
@@ -168,38 +193,48 @@ export class AuthController {
       throw new HttpException(
         'Lỗi máy chủ nội bộ',
         HttpStatus.INTERNAL_SERVER_ERROR,
+        { cause: err },
       );
     }
   }
 
   @Post('verify-forgot-password')
-  async verifyForgotPassword(@Body() verifyForgotPasswordDto: VerifyForgotPasswordDto) {
+  async verifyForgotPassword(
+    @Body() verifyForgotPasswordDto: VerifyForgotPasswordDto,
+  ) {
     try {
-      return await this.authService.verifyForgotPassword(verifyForgotPasswordDto);
+      return await this.authService.verifyForgotPassword(
+        verifyForgotPasswordDto,
+      );
     } catch (err) {
       console.log(`Lỗi ở xác thực OTP quên mật khẩu: ${err}`);
       if (err instanceof HttpException) {
-        throw err
+        throw err;
       }
       throw new HttpException(
         'Lỗi máy chủ nội bộ',
         HttpStatus.INTERNAL_SERVER_ERROR,
+        { cause: err },
       );
     }
   }
 
   @Post('reset-password')
-  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto, @Res({ passthrough: true }) res: Response) {
+  async resetPassword(
+    @Body() resetPasswordDto: ResetPasswordDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     try {
       return await this.authService.resetPassword(resetPasswordDto, res);
     } catch (err) {
       console.log(`Lỗi ở đổi mới mật khẩu: ${err}`);
       if (err instanceof HttpException) {
-        throw err
+        throw err;
       }
       throw new HttpException(
         'Lỗi máy chủ nội bộ',
         HttpStatus.INTERNAL_SERVER_ERROR,
+        { cause: err },
       );
     }
   }

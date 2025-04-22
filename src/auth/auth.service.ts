@@ -13,7 +13,7 @@ import { generateOtp } from './utils/otp.util';
 import { v4 as uuidv4 } from 'uuid';
 import { VerifySignupDto } from './dto/verify-signup.dto';
 import { TokensService } from './tokens.service';
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { setAccessTokenCookie, setRefreshTokenCookie } from './utils/jwt.util';
 import { UpdatePasswordDto } from './dto/update-pw.dto';
 import { UpdateInfoDto } from './dto/update-info';
@@ -35,7 +35,7 @@ export class AuthService {
     const { email, username, password, firstName, lastName, dob, gender } =
       signupDto;
     const existingUser = await this.userRepository.findOne({
-      where: [{ email, username }],
+      where: { email, username },
     });
     if (existingUser) {
       throw new HttpException('Người dùng đã tồn tại', HttpStatus.BAD_REQUEST);
@@ -105,7 +105,7 @@ export class AuthService {
     const { email, username, password, firstName, lastName, dob, gender } =
       registrationData;
     const existingUser = await this.userRepository.findOne({
-      where: [{ email, username }],
+      where: { email, username },
     });
     if (existingUser) {
       throw new HttpException('Người dùng đã tồn tại', HttpStatus.BAD_REQUEST);

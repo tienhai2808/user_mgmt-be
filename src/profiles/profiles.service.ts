@@ -1,13 +1,60 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { User, UserRole } from '../users/entities/user.entity';
+import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Profile } from './entities/profile.entity';
+import { ImageKitService } from '../imagekit/imagekit.service';
 
 @Injectable()
 export class ProfilesService {
-  update(id: number, updateProfileDto: UpdateProfileDto) {
-    return `This action updates a #${id} profile`;
-  }
+  constructor(
+    @InjectRepository(User) private readonly userRepository: Repository<User>,
+    @InjectRepository(Profile)
+    private readonly profileRepository: Repository<Profile>,
+    private readonly imageKitService: ImageKitService,
+  ) {}
+  async update(
+    currentUserId: string,
+    userId: string,
+    updateProfileDto: UpdateProfileDto,
+  ): Promise<{ user: User }> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new HttpException(
+        'Không tìm thấy người dùng',
+        HttpStatus.NOT_FOUND,
+      );
+    }
 
-  remove(id: number) {
-    return `This action removes a #${id} profile`;
+    const isAdmin = await this.userRepository.findOne({
+      where: { id: currentUserId, role: 'admin' as UserRole },
+    });
+    const isPermission = currentUserId === userId;
+    if (!isPermission && !isAdmin) {
+      throw new HttpException(
+        'Không có quyền thay đổi',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const profile = user.profile;
+    let avatarUrl: string | undefined;
+    const { avatar } = updateProfileDto;
+    if (avatar) {
+      avatarUrl = await this.imageKitService.uploadBase64Image(
+        avatar,
+        `avt-${user.id}`,
+      );
+    }
+
+    const updatedProfile = this.profileRepository.merge(profile, {
+      ...updateProfileDto,
+      ...(avatarUrl && { avatarUrl }),
+    });
+
+    await this.profileRepository.save(updatedProfile);
+
+    return { user };
   }
 }

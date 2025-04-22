@@ -9,6 +9,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { envValidationSchema } from './config/env.validation';
 import { ProfilesModule } from './profiles/profiles.module';
 import { RedisModule } from './redis/redis.module';
+import { ImageKitService } from './imagekit/imagekit.service';
 
 @Module({
   imports: [
@@ -29,6 +30,6 @@ import { RedisModule } from './redis/redis.module';
     RedisModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, ImageKitService],
 })
 export class AppModule {}

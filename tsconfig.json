@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "module": "commonjs",
+    "esModuleInterop": true, //Thêm
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,

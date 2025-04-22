@@ -1,18 +1,48 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Req,
+  Body,
+  Patch,
+  Param,
+  UseGuards,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { ProfilesService } from './profiles.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { AccessTokenGuard } from '../auth/guards/access-token.guard';
+import { GetUser } from 'src/auth/decorators/get-user.decorator';
+import { User } from '../users/entities/user.entity';
+import { ImageKitService } from '../imagekit/imagekit.service';
 
 @Controller('profiles')
 export class ProfilesController {
   constructor(private readonly profilesService: ProfilesService) {}
 
+  @UseGuards(AccessTokenGuard)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProfileDto: UpdateProfileDto) {
-    return this.profilesService.update(+id, updateProfileDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.profilesService.remove(+id);
+  update(
+    @GetUser('id') currentUserId: string,
+    @Param('id') userId: string,
+    @Body() updateProfileDto: UpdateProfileDto,
+  ) {
+    try {
+      return this.profilesService.update(
+        currentUserId,
+        userId,
+        updateProfileDto,
+      );
+    } catch (err) {
+      console.log(`Lỗi ở cập nhật hồ sơ: ${err}`);
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      throw new HttpException(
+        'Lỗi máy chủ nội bộ',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }
