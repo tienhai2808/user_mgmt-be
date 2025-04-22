@@ -17,6 +17,9 @@ import { Request, Response } from 'express';
 import { setAccessTokenCookie, setRefreshTokenCookie } from './utils/jwt.util';
 import { UpdatePasswordDto } from './dto/update-pw.dto';
 import { UpdateInfoDto } from './dto/update-info';
+import { ForgotPasswordDto } from './dto/forgot-pw.dto';
+import { VerifyForgotPasswordDto } from './dto/verify-forgot-pw.dto';
+import { ResetPasswordDto } from './dto/reset-pw.dto';
 
 @Injectable()
 export class AuthService {
@@ -38,7 +41,7 @@ export class AuthService {
       throw new HttpException('Người dùng đã tồn tại', HttpStatus.BAD_REQUEST);
     }
 
-    const otp = generateOtp(6);
+    const otp = generateOtp(5);
     const registrationToken = uuidv4();
 
     const hasedPassword = await hashPassword(password);
@@ -61,7 +64,11 @@ export class AuthService {
     );
     await this.redis.set(`otp:${registrationToken}`, otp, 'EX', 180);
 
-    await this.emailService.sendOtpEmail(email, otp);
+    await this.emailService.sendOtpEmail(
+      email,
+      otp,
+      'Mã OTP xác thực đăng ký từ Hệ thống quản lý người dùng',
+    );
 
     return { registrationToken };
   }
@@ -74,6 +81,10 @@ export class AuthService {
 
     const cachedOtp = await this.redis.get(`otp:${registrationToken}`);
     if (!cachedOtp || cachedOtp !== otp) {
+      if (cachedOtp) {
+        await this.redis.del(`registration:${registrationToken}`);
+        await this.redis.del(`otp:${registrationToken}`);
+      }
       throw new HttpException(
         'Mã OTP không chính xác hoặc đã hết hạn',
         HttpStatus.BAD_REQUEST,
@@ -168,51 +179,184 @@ export class AuthService {
     return { user };
   }
 
-  async refreshToken(userId: string, role: string, res: Response): Promise<void> {
+  async refreshToken(
+    userId: string,
+    role: string,
+    res: Response,
+  ): Promise<{ message: string }> {
     const accessToken = this.tokensService.generateAccessToken(userId, role);
     setAccessTokenCookie(res, accessToken);
+    return { message: 'Tạo mới Access Token thành công' };
   }
 
-  async signout(res: Response): Promise<void> {
+  async signout(res: Response): Promise<{ message: string }> {
     res.clearCookie('accessToken', { httpOnly: true, secure: true });
     res.clearCookie('refreshToken', { httpOnly: true, secure: true });
+    return { message: 'Đăng xuất thành công' };
   }
 
-  async updatePassword(userId: string, updatePasswordDto: UpdatePasswordDto): Promise<{ user: User }> {
+  async updatePassword(
+    userId: string,
+    updatePasswordDto: UpdatePasswordDto,
+  ): Promise<{ user: User }> {
     const { oldPassword, newPassword } = updatePasswordDto;
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
-      throw new HttpException('Người dùng không tồn tại', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Người dùng không tồn tại',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const isCorrectPassword = await comparePassword(oldPassword, user.password);
     if (!isCorrectPassword) {
-      throw new HttpException('Mật khẩu cũ không chính xác', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Mật khẩu cũ không chính xác',
+        HttpStatus.BAD_REQUEST,
+      );
     }
     const hashedNewPassword = await hashPassword(newPassword);
     user.password = hashedNewPassword;
 
     const updatedUser = await this.userRepository.save(user);
-    
+
     return { user: updatedUser };
   }
 
-  async updateInfo(userId: string, updateInfoDto: UpdateInfoDto): Promise<{ user: User }> {
+  async updateInfo(
+    userId: string,
+    updateInfoDto: UpdateInfoDto,
+  ): Promise<{ user: User }> {
     const { username } = updateInfoDto;
-    const user = await this.userRepository.findOne({ where: { id: userId } })
+    const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
-      throw new HttpException('Người dùng không tồn tại', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Người dùng không tồn tại',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
-    const existingUser = await this.userRepository.findOne({ where: { username } });
+    const existingUser = await this.userRepository.findOne({
+      where: { username },
+    });
     if (existingUser && existingUser.id !== userId) {
-      throw new HttpException('Tên người dùng đã tồn tại', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Tên người dùng đã tồn tại',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     user.username = username;
 
     const updatedUser = await this.userRepository.save(user);
-    
+
     return { user: updatedUser };
+  }
+
+  async forgotPassword(
+    forgotPasswordDto: ForgotPasswordDto,
+  ): Promise<{ forgotPasswordToken: string }> {
+    const { email } = forgotPasswordDto;
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (!user) {
+      throw new HttpException(
+        'Người dùng không tồn tại',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const otp = generateOtp(5);
+    const forgotPasswordToken = uuidv4();
+
+    await this.redis.set(
+      `forgotPassword:${forgotPasswordToken}`,
+      email,
+      'EX',
+      180,
+    );
+    await this.redis.set(`otp:${forgotPasswordToken}`, otp, 'EX', 180);
+
+    await this.emailService.sendOtpEmail(
+      email,
+      otp,
+      'Mã OTP xác thực quên mật khẩu từ Hệ thống quản lý người dùng',
+    );
+
+    return { forgotPasswordToken };
+  }
+
+  async verifyForgotPassword(
+    verifyForgotPasswordDto: VerifyForgotPasswordDto,
+  ): Promise<{ resetPasswordToken: string }> {
+    const { forgotPasswordToken, otp } = verifyForgotPasswordDto;
+    const cachedOtp = await this.redis.get(`otp:${forgotPasswordToken}`);
+    if (cachedOtp !== otp) {
+      if (cachedOtp) {
+        await this.redis.del(`forgotPassword:${forgotPasswordToken}`);
+        await this.redis.del(`otp:${forgotPasswordToken}`);
+      }
+      throw new HttpException('Mã OTP không hợp lệ', HttpStatus.BAD_REQUEST);
+    }
+
+    const forgotPasswordEmailStr = await this.redis.get(
+      `forgotPassword:${forgotPasswordToken}`,
+    );
+    if (!forgotPasswordEmailStr) {
+      throw new HttpException(
+        'Phiên quên mật khẩu đã hết hạn',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const resetPasswordToken = uuidv4();
+    await this.redis.set(
+      `resetPassword:${resetPasswordToken}`,
+      forgotPasswordEmailStr,
+      'EX',
+      180,
+    );
+
+    await this.redis.del(`forgotPassword:${forgotPasswordToken}`);
+    await this.redis.del(`otp:${forgotPasswordToken}`);
+
+    return { resetPasswordToken };
+  }
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto, res: Response): Promise<{ user: User }> {
+    const { resetPasswordToken, newPassword } = resetPasswordDto;
+    const resetPasswordEmailStr = await this.redis.get(
+      `resetPassword:${resetPasswordToken}`,
+    );
+    if (!resetPasswordEmailStr) {
+      throw new HttpException('Không thể đổi mật khẩu', HttpStatus.BAD_REQUEST);
+    }
+
+    const user = await this.userRepository.findOne({
+      where: { email: resetPasswordEmailStr },
+    });
+    if (!user) {
+      throw new HttpException(
+        'Người dùng không tồn tại',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const hashedNewPassword = await hashPassword(newPassword);
+
+    user.password = hashedNewPassword;
+    const updatedUser = await this.userRepository.save(user)
+
+    const accessToken = this.tokensService.generateAccessToken(
+      user.id,
+      user.role,
+    );
+    const refreshToken = this.tokensService.generateRefreshToken(
+      user.id,
+      user.role,
+    );
+    setAccessTokenCookie(res, accessToken);
+    setRefreshTokenCookie(res, refreshToken);
+
+    return { user: updatedUser }
   }
 }

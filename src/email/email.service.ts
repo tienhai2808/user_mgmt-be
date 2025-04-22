@@ -10,11 +10,11 @@ export class EmailService {
     this.transporter = nodemailer.createTransport(emailConfig(this.configService));
   }
 
-  async sendOtpEmail(to: string, otp: string): Promise<void> {
+  async sendOtpEmail(to: string, otp: string, subject: string): Promise<void> {
     await this.transporter.sendMail({
       from : this.configService.get<string>('SMTP_FROM', 'no-reply@yourapp.com'),
       to,
-      subject: 'Mã OTP đăng ký tài khoản tại Hệ thống quản lý người dùng',
+      subject: subject,
       html: `<p>Mã OTP của bạn là <b>${otp}</b>. Nó sẽ hết hạn sau 3 phút, nếu bạn nhập sai sẽ bị hủy.</p>`
     })
   }

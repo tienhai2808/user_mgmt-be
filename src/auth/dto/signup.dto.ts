@@ -9,7 +9,7 @@ export class SignupDto {
   @MinLength(3)
   username: string;
 
-  @IsEmail({}, { message: 'Không đúng định dạng email'})
+  @IsEmail({}, { message: 'Email không hợp lệ'})
   @IsNotEmpty()
   email: string;
 

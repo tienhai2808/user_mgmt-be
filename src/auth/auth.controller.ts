@@ -20,6 +20,9 @@ import { Response } from 'express';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { UpdatePasswordDto } from './dto/update-pw.dto';
 import { UpdateInfoDto } from './dto/update-info';
+import { ForgotPasswordDto } from './dto/forgot-pw.dto';
+import { VerifyForgotPasswordDto } from './dto/verify-forgot-pw.dto';
+import { ResetPasswordDto } from './dto/reset-pw.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -88,8 +91,7 @@ export class AuthController {
   @Get('refresh-token')
   async refreshToken(@Request() req, @Res({ passthrough: true }) res: Response) {
     try {
-      await this.authService.refreshToken(req.user.id, req.user.role, res);
-      return { "message": "Tạo mới Access Token thành công" };
+      return await this.authService.refreshToken(req.user.id, req.user.role, res);
     } catch (err) {
       console.log(`Lỗi ở làm mới mã thông báo: ${err}`);
       if (err instanceof HttpException) {
@@ -107,8 +109,7 @@ export class AuthController {
   @Post('signout') 
   async signout(@Res({ passthrough: true }) res: Response) {
     try {
-      await this.authService.signout(res);
-      return { message: 'Đăng xuất thành công' };
+      return await this.authService.signout(res);
     } catch (er) {
       console.log(`Lỗi ở đăng xuất: ${er}`);
       if (er instanceof HttpException) {
@@ -147,6 +148,54 @@ export class AuthController {
       console.log(`Lỗi ở cập nhật thông tin: ${err}`);
       if (err instanceof HttpException) {
         throw err;
+      }
+      throw new HttpException(
+        'Lỗi máy chủ nội bộ',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('forgot-password')
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    try {
+      return await this.authService.forgotPassword(forgotPasswordDto);
+    } catch (err) {
+      console.log(`Lỗi ở quên mật khẩu: ${err}`);
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      throw new HttpException(
+        'Lỗi máy chủ nội bộ',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('verify-forgot-password')
+  async verifyForgotPassword(@Body() verifyForgotPasswordDto: VerifyForgotPasswordDto) {
+    try {
+      return await this.authService.verifyForgotPassword(verifyForgotPasswordDto);
+    } catch (err) {
+      console.log(`Lỗi ở xác thực OTP quên mật khẩu: ${err}`);
+      if (err instanceof HttpException) {
+        throw err
+      }
+      throw new HttpException(
+        'Lỗi máy chủ nội bộ',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('reset-password')
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto, @Res({ passthrough: true }) res: Response) {
+    try {
+      return await this.authService.resetPassword(resetPasswordDto, res);
+    } catch (err) {
+      console.log(`Lỗi ở đổi mới mật khẩu: ${err}`);
+      if (err instanceof HttpException) {
+        throw err
       }
       throw new HttpException(
         'Lỗi máy chủ nội bộ',
