@@ -15,13 +15,12 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { AccessTokenGuard } from '../auth/guards/access-token.guard';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { User } from '../users/entities/user.entity';
-import { ImageKitService } from '../imagekit/imagekit.service';
 
 @Controller('profiles')
+@UseGuards(AccessTokenGuard)
 export class ProfilesController {
   constructor(private readonly profilesService: ProfilesService) {}
 
-  @UseGuards(AccessTokenGuard)
   @Patch(':id')
   update(
     @GetUser('id') currentUserId: string,
