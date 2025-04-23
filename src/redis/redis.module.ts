@@ -16,7 +16,7 @@ import { Redis } from 'ioredis';
         });
         redis.on('connect', () =>
           console.log(
-            `Redis connected att http://${configService.get<string>('REDIS_HOST')}:${configService.get<number>('REDIS_PORT')}`,
+            `Redis connected at http://${configService.get<string>('REDIS_HOST')}:${configService.get<number>('REDIS_PORT')}`,
           ),
         );
         redis.on('error', (err) => console.error('Redis error:', err));

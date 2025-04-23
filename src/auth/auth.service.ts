@@ -35,7 +35,7 @@ export class AuthService {
     const { email, username, password, firstName, lastName, dob, gender } =
       signupDto;
     const existingUser = await this.userRepository.findOne({
-      where: { email, username },
+      where: [{ email }, { username }],
     });
     if (existingUser) {
       throw new HttpException('Người dùng đã tồn tại', HttpStatus.BAD_REQUEST);
@@ -105,7 +105,7 @@ export class AuthService {
     const { email, username, password, firstName, lastName, dob, gender } =
       registrationData;
     const existingUser = await this.userRepository.findOne({
-      where: { email, username },
+      where: [{ email }, { username }],
     });
     if (existingUser) {
       throw new HttpException('Người dùng đã tồn tại', HttpStatus.BAD_REQUEST);
@@ -190,8 +190,16 @@ export class AuthService {
   }
 
   async signout(res: Response): Promise<{ message: string }> {
-    res.clearCookie('accessToken', { httpOnly: true, secure: true, sameSite: 'strict' });
-    res.clearCookie('refreshToken', { httpOnly: true, secure: true, sameSite: 'strict' });
+    res.clearCookie('accessToken', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+    });
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+    });
     return { message: 'Đăng xuất thành công' };
   }
 
@@ -322,7 +330,10 @@ export class AuthService {
     return { resetPasswordToken };
   }
 
-  async resetPassword(resetPasswordDto: ResetPasswordDto, res: Response): Promise<{ user: User }> {
+  async resetPassword(
+    resetPasswordDto: ResetPasswordDto,
+    res: Response,
+  ): Promise<{ user: User }> {
     const { resetPasswordToken, newPassword } = resetPasswordDto;
     const resetPasswordEmailStr = await this.redis.get(
       `resetPassword:${resetPasswordToken}`,
@@ -344,7 +355,7 @@ export class AuthService {
     const hashedNewPassword = await hashPassword(newPassword);
 
     user.password = hashedNewPassword;
-    const updatedUser = await this.userRepository.save(user)
+    const updatedUser = await this.userRepository.save(user);
 
     const accessToken = this.tokensService.generateAccessToken(
       user.id,
@@ -357,20 +368,34 @@ export class AuthService {
     setAccessTokenCookie(res, accessToken);
     setRefreshTokenCookie(res, refreshToken);
 
-    return { user: updatedUser }
+    return { user: updatedUser };
   }
 
-  async deleteAccount(userId: string, res: Response): Promise<{ message: string }> {
-    const user = await this.userRepository.findOne({ where: { id: userId } })
+  async deleteAccount(
+    userId: string,
+    res: Response,
+  ): Promise<{ message: string }> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
-      throw new HttpException('Không có quyền xóa tài khoản', HttpStatus.UNAUTHORIZED)
+      throw new HttpException(
+        'Không có quyền xóa tài khoản',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
-    await this.userRepository.remove(user)
+    await this.userRepository.remove(user);
 
-    res.clearCookie('accessToken', { httpOnly: true, secure: true, sameSite: 'strict' });
-    res.clearCookie('refreshToken', { httpOnly: true, secure: true, sameSite: 'strict' });
-    
-    return { message: 'Xóa tài khoản thành công' }
+    res.clearCookie('accessToken', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+    });
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+    });
+
+    return { message: 'Xóa tài khoản thành công' };
   }
 }

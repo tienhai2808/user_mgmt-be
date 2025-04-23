@@ -10,6 +10,7 @@ import { envValidationSchema } from './config/env.validation';
 import { ProfilesModule } from './profiles/profiles.module';
 import { RedisModule } from './redis/redis.module';
 import { ImageKitService } from './imagekit/imagekit.service';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { ImageKitService } from './imagekit/imagekit.service';
     AuthModule,
     ProfilesModule,
     RedisModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService, ImageKitService],

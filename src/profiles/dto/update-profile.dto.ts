@@ -1,6 +1,6 @@
 import { Type } from "class-transformer";
 import { IsString, IsOptional, IsIn, IsBase64, IsDate } from "class-validator";
-import { GENDER } from "src/auth/dto/signup.dto";
+import { GENDER } from "../../auth/dto/signup.dto";
 
 export class UpdateProfileDto {
   @IsString()

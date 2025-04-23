@@ -27,11 +27,7 @@ export class ProfilesService {
       );
     }
 
-    const isAdmin = await this.userRepository.findOne({
-      where: { id: currentUserId, role: 'admin' as UserRole },
-    });
-    const isPermission = currentUserId === userId;
-    if (!isPermission && !isAdmin) {
+    if (currentUserId !== userId) {
       throw new HttpException(
         'Không có quyền thay đổi',
         HttpStatus.UNAUTHORIZED,

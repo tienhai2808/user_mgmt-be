@@ -29,7 +29,7 @@ export class Profile {
   @Column({ type: 'date', nullable: false })
   dob: Date;
 
-  @Column({ type: 'varchar', length: 5, nullable: false })
+  @Column({ type: 'varchar', length: 6, nullable: false })
   gender: string;
 
   @Column({ type: 'varchar', nullable: true })
