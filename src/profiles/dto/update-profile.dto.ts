@@ -16,11 +16,6 @@ export class UpdateProfileDto {
   @IsIn(GENDER)
   gender: string;
 
-  @IsString()
-  @IsBase64()
-  @IsOptional()
-  avatar: string;
-
   @IsDate()
   @Type(() => Date)
   @IsOptional()

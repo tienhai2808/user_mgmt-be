@@ -15,7 +15,8 @@ export class AdminService {
     private readonly profileRepository: Repository<Profile>,
     private readonly configService: ConfigService,
   ) {}
-  async createRoot(createRootAdminDto: CreateAdminRootDto) {
+
+  async createRoot(createRootAdminDto: CreateAdminRootDto):Promise<void> {
     const { username, email, password } = createRootAdminDto;
     const existingUser = await this.userRepository.findOne({
       where: [{ email }, { username }],
@@ -47,5 +48,10 @@ export class AdminService {
     });
 
     await this.userRepository.save(newAdmin);
+  }
+
+  async getAllUser(): Promise<{ users: User[] }> {
+    const users = await this.userRepository.find();
+    return { users }
   }
 }

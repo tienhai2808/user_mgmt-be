@@ -18,6 +18,7 @@ export class ProfilesService {
     currentUserId: string,
     userId: string,
     updateProfileDto: UpdateProfileDto,
+    file?: Express.Multer.File,
   ): Promise<{ user: User }> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
@@ -36,12 +37,8 @@ export class ProfilesService {
 
     const profile = user.profile;
     let avatarUrl: string | undefined;
-    const { avatar } = updateProfileDto;
-    if (avatar) {
-      avatarUrl = await this.imageKitService.uploadBase64Image(
-        avatar,
-        `avt-${user.id}`,
-      );
+    if (file?.buffer) {
+      avatarUrl = await this.imageKitService.uploadImageFile(file.buffer, `avt-${user.id}`);
     }
 
     const updatedProfile = this.profileRepository.merge(profile, {

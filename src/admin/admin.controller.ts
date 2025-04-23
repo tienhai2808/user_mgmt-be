@@ -11,8 +11,14 @@ import { Roles } from '../auth/decorators/roles.decorator';
 @UseGuards(AccessTokenGuard, RolesGuard)
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
+
   @Get('/dashboard')
   getAdminDashboard() {
     return { message: "Lồn" }
+  }
+
+  @Get('/all-user')
+  async getAllUser() {
+    return await this.adminService.getAllUser();
   }
 }

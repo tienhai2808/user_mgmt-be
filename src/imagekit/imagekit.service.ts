@@ -26,33 +26,28 @@ export class ImageKitService {
     });
   }
 
-  async uploadBase64Image(
-    base64String: string,
+  async uploadImageFile(
+    fileBuffer: Buffer,
     fileName: string,
-    folder: string = 'user_mgmt',
+    folder = 'user_mgmt',
   ): Promise<string> {
     try {
-      const base64Data = base64String.replace(
-        /^data:image\/[a-z]+;base64,/,
-        '',
-      );
-      const buffer = Buffer.from(base64Data, 'base64');
-      const resizedBuffer = await sharp(buffer)
+      const resizedBuffer = await sharp(fileBuffer)
         .resize({ width: 200, height: 200, fit: 'inside' })
         .toFormat('webp', { quality: 100 })
         .toBuffer();
-
+  
       const result = await this.imageKit.upload({
         file: resizedBuffer.toString('base64'),
         fileName,
         folder,
       });
-
+  
       return result.url;
     } catch (err) {
-      console.log(`Lỗi khi upload ảnh lên ImageKit: ${err}`);
+      console.error(`Lỗi khi upload file ảnh lên ImageKit:`, err);
       throw new HttpException(
-        'Lỗi máy chủ nội bộ',
+        'Lỗi máy chủ khi xử lý ảnh',
         HttpStatus.INTERNAL_SERVER_ERROR,
         { cause: err },
       );
