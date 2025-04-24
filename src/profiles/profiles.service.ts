@@ -43,6 +43,7 @@ export class ProfilesService {
       if (existingUser) {
         throw new HttpException('Username đã tồn tại', HttpStatus.BAD_REQUEST);
       }
+      user.username = updateProfileDto.username;
     }
 
     let avatarUrl: string | undefined;
@@ -58,7 +59,9 @@ export class ProfilesService {
       ...(avatarUrl && { avatarUrl }),
     });
 
-    await this.profileRepository.save(updatedProfile);
+    user.profile = updatedProfile;
+
+    await this.userRepository.save(user);
 
     return { user };
   }

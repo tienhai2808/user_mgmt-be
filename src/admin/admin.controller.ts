@@ -20,6 +20,7 @@ import { multerOptions } from 'src/config/multer.config';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateUserDto } from './dto/create-user.dto';
 import { DeleteUsersDto } from './dto/delete-users.dto';
+import { UpdateUserDto } from './dto/update-user';
 
 @Roles('admin')
 @Controller('admin')
@@ -59,6 +60,28 @@ export class AdminController {
       return await this.adminService.createUser(file, createUserDto);
     } catch (err) {
       console.log('Lỗi tạo mới người dùng: ', err);
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      throw new HttpException(
+        'Lỗi máy chủ nội bộ',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        { cause: err },
+      );
+    }
+  }
+
+  @Patch('/users/:id')
+  @UseInterceptors(FileInterceptor('avatar', multerOptions))
+  async updateUser(
+    @Param('id') userId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    try {
+      return await this.adminService.updateUser(userId, file, updateUserDto);
+    } catch (err) {
+      console.log(`Lỗi cập nhật thông tin người dùng`);
       if (err instanceof HttpException) {
         throw err;
       }

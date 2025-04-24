@@ -35,6 +35,7 @@ export class Profile {
   @Column({ type: 'varchar', nullable: true })
   bio: string;
 
+  @Exclude()
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 

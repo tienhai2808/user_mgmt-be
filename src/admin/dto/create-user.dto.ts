@@ -1,4 +1,12 @@
-import { IsEmail, IsString, MinLength, IsNotEmpty, IsIn, IsDate, IsOptional } from 'class-validator';
+import {
+  IsEmail,
+  IsString,
+  MinLength,
+  IsNotEmpty,
+  IsIn,
+  IsDate,
+  IsOptional,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { UserRole } from '../../users/entities/user.entity';
 
@@ -10,7 +18,7 @@ export class CreateUserDto {
   @MinLength(3)
   username: string;
 
-  @IsEmail({}, { message: 'Email không hợp lệ'})
+  @IsEmail({}, { message: 'Email không hợp lệ' })
   @IsNotEmpty()
   email: string;
 
@@ -29,7 +37,9 @@ export class CreateUserDto {
 
   @IsString()
   @IsNotEmpty()
-  @IsIn(GENDER)
+  @IsIn(GENDER, {
+    message: 'Yêu cầu giới tính là "male", "female" hoặc "other"',
+  })
   gender: string;
 
   @IsDate()

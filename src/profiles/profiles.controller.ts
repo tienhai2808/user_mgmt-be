@@ -45,6 +45,7 @@ export class ProfilesController {
       throw new HttpException(
         'Lỗi máy chủ nội bộ',
         HttpStatus.INTERNAL_SERVER_ERROR,
+        { cause: err }
       );
     }
   }
