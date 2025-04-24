@@ -4,7 +4,6 @@ import {
   Body,
   Get,
   Patch,
-  Param,
   HttpException,
   HttpStatus,
   UseGuards,
@@ -16,14 +15,14 @@ import { SignupDto } from './dto/signup.dto';
 import { SigninDto } from './dto/signin.dto';
 import { VerifySignupDto } from './dto/verify-signup.dto';
 import { AccessTokenGuard } from './guards/access-token.guard';
-import { Response, Request } from 'express';
+import { Response } from 'express';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { ChangePasswordDto } from './dto/change-pw.dto';
 import { ForgotPasswordDto } from './dto/forgot-pw.dto';
 import { VerifyForgotPasswordDto } from './dto/verify-forgot-pw.dto';
 import { ResetPasswordDto } from './dto/reset-pw.dto';
 import { GetUser } from './decorators/get-user.decorator';
-import { User } from 'src/users/entities/user.entity';
+import { User } from '../users/entities/user.entity';
 
 @Controller('auth')
 export class AuthController {

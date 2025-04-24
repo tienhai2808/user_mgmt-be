@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User, UserRole } from '../users/entities/user.entity';
 import { In, Not, Repository } from 'typeorm';
@@ -10,6 +10,8 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { ImageKitService } from '../imagekit/imagekit.service';
 import { DeleteUsersDto } from './dto/delete-users.dto';
 import { UpdateUserDto } from './dto/update-user';
+import { instanceToPlain } from 'class-transformer';
+import Redis from 'ioredis';
 
 @Injectable()
 export class AdminService {
@@ -17,6 +19,7 @@ export class AdminService {
     @InjectRepository(User) private readonly userRepository: Repository<User>,
     @InjectRepository(Profile)
     private readonly profileRepository: Repository<Profile>,
+    @Inject('REDIS_CLIENT') private readonly redis: Redis,
     private readonly configService: ConfigService,
     private readonly imageKitService: ImageKitService,
   ) {}
@@ -56,7 +59,15 @@ export class AdminService {
   }
 
   async getAllUser(): Promise<{ users: User[] }> {
+    const cachedKey = 'users:all'
+    const cachedUsers = await this.redis.get(cachedKey);
+    if (cachedUsers) {
+      const users = JSON.parse(cachedUsers);
+      return { users }
+    }
     const users = await this.userRepository.find();
+    const plainUsers = instanceToPlain(users);
+    await this.redis.set(cachedKey, JSON.stringify(plainUsers), 'EX', 3600)
     return { users };
   }
 
@@ -101,8 +112,9 @@ export class AdminService {
       createUserDto.bio ? (newProfile.bio = createUserDto.bio) : null,
       (newProfile.avatarUrl = avatarUrl),
       (newUser.profile = newProfile);
-      
+
     await this.userRepository.save(newUser);
+    await this.redis.del('users:all')
     return { user: newUser };
   }
 
@@ -162,7 +174,7 @@ export class AdminService {
 
     user.profile = updatedProfile;
     const updatedUser = await this.userRepository.save(user);
-
+    await this.redis.del('users:all')
     return { user: updatedUser };
   }
 
@@ -180,6 +192,7 @@ export class AdminService {
     }
 
     const result = await this.userRepository.delete(ids);
+    await this.redis.del('users:all')
     return { message: `Xóa thành công ${result.affected || 0} người dùng` };
   }
 }

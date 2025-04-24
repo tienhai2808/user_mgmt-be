@@ -24,7 +24,6 @@ import { AdminModule } from './admin/admin.module';
       useFactory: (configService: ConfigService) =>
         typeOrmConfig(configService),
     }),
-    RedisModule,
     UsersModule,
     AuthModule,
     ProfilesModule,
