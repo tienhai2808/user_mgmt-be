@@ -18,14 +18,12 @@ import { VerifySignupDto } from './dto/verify-signup.dto';
 import { AccessTokenGuard } from './guards/access-token.guard';
 import { Response, Request } from 'express';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
-import { UpdatePasswordDto } from './dto/update-pw.dto';
-import { UpdateInfoDto } from './dto/update-info';
+import { ChangePasswordDto } from './dto/change-pw.dto';
 import { ForgotPasswordDto } from './dto/forgot-pw.dto';
 import { VerifyForgotPasswordDto } from './dto/verify-forgot-pw.dto';
 import { ResetPasswordDto } from './dto/reset-pw.dto';
 import { GetUser } from './decorators/get-user.decorator';
 import { User } from 'src/users/entities/user.entity';
-import { AuthGuard } from '@nestjs/passport';
 
 @Controller('auth')
 export class AuthController {
@@ -142,36 +140,15 @@ export class AuthController {
   }
 
   @UseGuards(AccessTokenGuard)
-  @Patch('update-password')
+  @Patch('change-password')
   async updatePassword(
     @GetUser('id') userId: string,
-    @Body() updatePasswordDto: UpdatePasswordDto,
+    @Body() changePasswordDto: ChangePasswordDto,
   ) {
     try {
-      return await this.authService.updatePassword(userId, updatePasswordDto);
+      return await this.authService.changePassword(userId, changePasswordDto);
     } catch (err) {
       console.log(`Lỗi ở cập nhật mật khẩu: ${err}`);
-      if (err instanceof HttpException) {
-        throw err;
-      }
-      throw new HttpException(
-        'Lỗi máy chủ nội bộ',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-        { cause: err },
-      );
-    }
-  }
-
-  @UseGuards(AccessTokenGuard)
-  @Patch('update-info')
-  async updateInfo(
-    @GetUser('id') userId: string,
-    @Body() updateInfoDto: UpdateInfoDto,
-  ) {
-    try {
-      return await this.authService.updateInfo(userId, updateInfoDto);
-    } catch (err) {
-      console.log(`Lỗi ở cập nhật thông tin: ${err}`);
       if (err instanceof HttpException) {
         throw err;
       }

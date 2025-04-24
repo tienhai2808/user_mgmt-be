@@ -1,7 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import { User, UserRole } from '../users/entities/user.entity';
-import { Repository } from 'typeorm';
+import { User } from '../users/entities/user.entity';
+import { Not, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Profile } from './entities/profile.entity';
 import { ImageKitService } from '../imagekit/imagekit.service';
@@ -36,9 +36,21 @@ export class ProfilesService {
     }
 
     const profile = user.profile;
+    if (updateProfileDto.username) {
+      const existingUser = await this.userRepository.findOne({
+        where: { username: updateProfileDto.username, id: Not(currentUserId) },
+      });
+      if (existingUser) {
+        throw new HttpException('Username đã tồn tại', HttpStatus.BAD_REQUEST);
+      }
+    }
+
     let avatarUrl: string | undefined;
     if (file?.buffer) {
-      avatarUrl = await this.imageKitService.uploadImageFile(file.buffer, `avt-${user.id}`);
+      avatarUrl = await this.imageKitService.uploadImageFile(
+        file.buffer,
+        `avt-${user.id}`,
+      );
     }
 
     const updatedProfile = this.profileRepository.merge(profile, {

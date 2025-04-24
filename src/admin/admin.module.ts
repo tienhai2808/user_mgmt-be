@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../users/entities/user.entity';
 import { Profile } from '../profiles/entities/profile.entity';
 import { ConfigModule } from '@nestjs/config';
+import { ImageKitService } from 'src/imagekit/imagekit.service';
 
 @Module({
   imports: [
@@ -12,6 +13,6 @@ import { ConfigModule } from '@nestjs/config';
     ConfigModule,
   ],
   controllers: [AdminController],
-  providers: [AdminService],
+  providers: [AdminService, ImageKitService],
 })
 export class AdminModule {}

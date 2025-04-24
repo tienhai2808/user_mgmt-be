@@ -15,8 +15,7 @@ import { VerifySignupDto } from './dto/verify-signup.dto';
 import { TokensService } from './tokens.service';
 import { Response } from 'express';
 import { setAccessTokenCookie, setRefreshTokenCookie } from './utils/jwt.util';
-import { UpdatePasswordDto } from './dto/update-pw.dto';
-import { UpdateInfoDto } from './dto/update-info';
+import { ChangePasswordDto } from './dto/change-pw.dto';
 import { ForgotPasswordDto } from './dto/forgot-pw.dto';
 import { VerifyForgotPasswordDto } from './dto/verify-forgot-pw.dto';
 import { ResetPasswordDto } from './dto/reset-pw.dto';
@@ -203,11 +202,11 @@ export class AuthService {
     return { message: 'Đăng xuất thành công' };
   }
 
-  async updatePassword(
+  async changePassword(
     userId: string,
-    updatePasswordDto: UpdatePasswordDto,
+    changePasswordDto: ChangePasswordDto,
   ): Promise<{ user: User }> {
-    const { oldPassword, newPassword } = updatePasswordDto;
+    const { oldPassword, newPassword } = changePasswordDto;
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new HttpException(
@@ -225,36 +224,6 @@ export class AuthService {
     }
     const hashedNewPassword = await hashPassword(newPassword);
     user.password = hashedNewPassword;
-
-    const updatedUser = await this.userRepository.save(user);
-
-    return { user: updatedUser };
-  }
-
-  async updateInfo(
-    userId: string,
-    updateInfoDto: UpdateInfoDto,
-  ): Promise<{ user: User }> {
-    const { username } = updateInfoDto;
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (!user) {
-      throw new HttpException(
-        'Người dùng không tồn tại',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    const existingUser = await this.userRepository.findOne({
-      where: { username },
-    });
-    if (existingUser && existingUser.id !== userId) {
-      throw new HttpException(
-        'Tên người dùng đã tồn tại',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    user.username = username;
 
     const updatedUser = await this.userRepository.save(user);
 

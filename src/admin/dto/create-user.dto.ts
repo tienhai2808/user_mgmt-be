@@ -1,9 +1,10 @@
-import { IsEmail, IsString, MinLength, IsNotEmpty, IsIn, IsDate } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsNotEmpty, IsIn, IsDate, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
+import { UserRole } from '../../users/entities/user.entity';
 
 export const GENDER = ['male', 'female', 'other'] as const;
 
-export class CreateAdminDto {
+export class CreateUserDto {
   @IsString()
   @IsNotEmpty()
   @MinLength(3)
@@ -12,6 +13,11 @@ export class CreateAdminDto {
   @IsEmail({}, { message: 'Email không hợp lệ'})
   @IsNotEmpty()
   email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsIn(Object.values(UserRole), { message: 'Vai trò không hợp lệ' })
+  role: UserRole;
 
   @IsString()
   @IsNotEmpty()
@@ -30,6 +36,10 @@ export class CreateAdminDto {
   @Type(() => Date)
   @IsNotEmpty()
   dob: Date;
+
+  @IsOptional()
+  @IsString()
+  bio: string | null;
 
   @IsString()
   @IsNotEmpty()
